@@ -8,12 +8,44 @@ import re
 import MySQLdb
 
 
+BASE_URL = "http://www.styleweekly.com/richmond/BestOf?category="
 
-CATEGORY_URL = "http://www.styleweekly.com/richmond/BestOf?category="
-#CATEGORY_IDS = ['1462335','1462336','1462337','1462339','1712487'] # categories for 2013 and 2012
-CATEGORY_IDS = ['1462335','1462336','1462337','1462338','1462339','1462340']  # categories for 2011
+# collected this manually from the style pages
+CATEGORY_IDS = {'2011':{'Goods and Services':'1462337'
+                      'Food & Drink':'1462336',
+                      'Arts & Culture':'1462335',
+                      'Nightlife':'1462339',
+                      'People, Politics, and Media':'1462340',
+                      'Living and Recreation': '1462338'
+                      },
+               '2012':{'Goods and Services':'1462337'
+                       'Food & Drink':'1462336',
+                       'Arts & Culture':'1462335',
+                       'Nightlife':'1462339',
+                       'People and Places':'1712487'
+                       },
+               '2013':{'Goods and Services':'1462337'
+                       'Food & Drink':'1462336',
+                       'Arts & Culture':'1462335',
+                       'Nightlife':'1462339',
+                       'People and Places':'1712487'
+                       },
+               '2014':{'Goods and Services':'1462337'
+                       'Food & Drink':'1462336',
+                       'Arts & Culture':'1462335',
+                       'Nightlife':'1462339',
+                       'People and Places':'1712487'
+                       },
+               '2015':{'Goods and Services':'1462337'
+                       'Food & Drink':'1462336',
+                       'Arts & Culture':'1462335',
+                       'Nightlife':'1462339',
+                       'People and Places':'1712487'
+                       }
+               }
+ 
 CATEGORY_SUFFIX = '&feature=&year='
-# URL for a given category will look like CATEGORY_URL+CATEGORY_IDS[i]+CATEGORY_SUFFIX+<year>
+# URL for a given category will look like BASE_URL+CATEGORY_IDS[i]+CATEGORY_SUFFIX+<year>
 
 
 RESULT_URL = "http://www.styleweekly.com/richmond/BestOf?oid="
@@ -75,15 +107,15 @@ def get_name_from_place_string(place_string):
 def get_list_of_links():
 
     # get the list of URLS for each category
-    category_urls = []
+    BASE_URLs = []
     for cat_id in CATEGORY_IDS:
-    #    category_urls.append(CATEGORY_URL+cat_id+CATEGORY_SUFFIX+"2013")
-    #   category_urls.append(CATEGORY_URL+cat_id+CATEGORY_SUFFIX+"2012")
-       category_urls.append(CATEGORY_URL+cat_id+CATEGORY_SUFFIX+"2011")
+    #    BASE_URLs.append(BASE_URL+cat_id+CATEGORY_SUFFIX+"2013")
+    #   BASE_URLs.append(BASE_URL+cat_id+CATEGORY_SUFFIX+"2012")
+       BASE_URLs.append(BASE_URL+cat_id+CATEGORY_SUFFIX+"2011")
     
     # now roll through each category and get all of the URLs for each winner
     category_links= []
-    for url in category_urls:
+    for url in BASE_URLs:
         soup = create_soup(url)
         narrowoptions = soup.findAll("ul","narrowOptions")[2]  # the list of links on the side is ul class    "narrowoptions"
         # skip the first one since we have that one
@@ -93,7 +125,6 @@ def get_list_of_links():
                # print(option.a["href"])
                 category_links.append(option.a["href"])
             i = i+1
-            
             
     return category_links
 
