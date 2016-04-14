@@ -7,52 +7,62 @@ import csv, codecs, cStringIO
 import re
 import MySQLdb
 
+'''
+    Some terms:
+        Category = one of the 5 (or 6 in 2011) high level categories the awards are grouped into
+        Award = the individual awards (Best Hair Salon, Best Choice for Virginia’s Official State Song, etc)
+        Critic's Pick = They've got of bunch of totes rando awards like "Best Hope for an Art Theater" and "Best Way to Make It Yourself (Not Really)"
+                        These will be denoted as critic's pick and usually discarded from any analysis
 
-BASE_URL = "http://www.styleweekly.com/richmond/BestOf?category="
+'''
+
+
+CATEGORY_BASE_URL = "http://www.styleweekly.com/richmond/BestOf?category="
 
 # collected this manually from the style pages
-CATEGORY_IDS = {'2011':{'Goods and Services':'1462337'
-                      'Food & Drink':'1462336',
-                      'Arts & Culture':'1462335',
-                      'Nightlife':'1462339',
-                      'People, Politics, and Media':'1462340',
-                      'Living and Recreation': '1462338'
-                      },
-               '2012':{'Goods and Services':'1462337'
-                       'Food & Drink':'1462336',
-                       'Arts & Culture':'1462335',
-                       'Nightlife':'1462339',
-                       'People and Places':'1712487'
-                       },
-               '2013':{'Goods and Services':'1462337'
-                       'Food & Drink':'1462336',
-                       'Arts & Culture':'1462335',
-                       'Nightlife':'1462339',
-                       'People and Places':'1712487'
-                       },
-               '2014':{'Goods and Services':'1462337'
-                       'Food & Drink':'1462336',
-                       'Arts & Culture':'1462335',
-                       'Nightlife':'1462339',
-                       'People and Places':'1712487'
-                       },
-               '2015':{'Goods and Services':'1462337'
-                       'Food & Drink':'1462336',
-                       'Arts & Culture':'1462335',
-                       'Nightlife':'1462339',
-                       'People and Places':'1712487'
-                       }
-               }
+CATEGORIES_BY_YEAR = {'2011':{'Goods and Services':'1462337',
+                              'Food & Drink':'1462336',
+                              'Arts & Culture':'1462335',
+                              'Nightlife':'1462339',
+                              'People, Politics, and Media':'1462340',
+                              'Living and Recreation': '1462338'
+                               },
+                      '2012':{'Goods and Services':'1462337',
+                              'Food & Drink':'1462336',
+                              'Arts & Culture':'1462335',
+                              'Nightlife':'1462339',
+                              'People and Places':'1712487'
+                              },
+                      '2013':{'Goods and Services':'1462337',
+                              'Food & Drink':'1462336',
+                              'Arts & Culture':'1462335',
+                              'Nightlife':'1462339',
+                              'People and Places':'1712487'
+                              },
+                      '2014':{'Goods and Services':'1462337',
+                              'Food & Drink':'1462336',
+                              'Arts & Culture':'1462335',
+                              'Nightlife':'1462339',
+                              'People and Places':'1712487'
+                              },
+                      '2015':{'Goods and Services':'1462337',
+                              'Food & Drink':'1462336',
+                              'Arts & Culture':'1462335',
+                              'Nightlife':'1462339',
+                              'People and Places':'1712487'
+                              }
+                      }
  
 CATEGORY_SUFFIX = '&feature=&year='
-# URL for a given category will look like BASE_URL+CATEGORY_IDS[i]+CATEGORY_SUFFIX+<year>
-
+# URL for a given category will look like CATEGORY_BASE_URL+CATEGORY_IDS[i]+CATEGORY_SUFFIX+<year>
 
 RESULT_URL = "http://www.styleweekly.com/richmond/BestOf?oid="
+
 
 def create_soup(url):
     beaut_soup = BeautifulSoup(urlopen(url),"lxml")
     return beaut_soup
+
 
 def add_to_database(category_data):
     db = MySQLdb.connect(host='localhost',
@@ -103,31 +113,6 @@ def get_name_from_place_string(place_string):
     else:
         return place_string
     
-
-def get_list_of_links():
-
-    # get the list of URLS for each category
-    BASE_URLs = []
-    for cat_id in CATEGORY_IDS:
-    #    BASE_URLs.append(BASE_URL+cat_id+CATEGORY_SUFFIX+"2013")
-    #   BASE_URLs.append(BASE_URL+cat_id+CATEGORY_SUFFIX+"2012")
-       BASE_URLs.append(BASE_URL+cat_id+CATEGORY_SUFFIX+"2011")
-    
-    # now roll through each category and get all of the URLs for each winner
-    category_links= []
-    for url in BASE_URLs:
-        soup = create_soup(url)
-        narrowoptions = soup.findAll("ul","narrowOptions")[2]  # the list of links on the side is ul class    "narrowoptions"
-        # skip the first one since we have that one
-        i = 1
-        for option in narrowoptions.findAll("li",):
-            if i > 1:
-               # print(option.a["href"])
-                category_links.append(option.a["href"])
-            i = i+1
-            
-    return category_links
-
 
 def parse_address(address_list):
     """ Surprise, the address fields are inconsistently populated.  
@@ -292,8 +277,33 @@ def get_data_for_page(url):
     return page_data
 
 
+################################################################################################
+################################################################################################
+################################################################################################
+################################################################################################
 
-all_links = get_list_of_links()
+def get_award_urls(category_id, year):
+    ''' take a category id and a year
+        return a list of URLs for each award in that category
+    '''
 
-print(all_links)
+    # get the list of URLS for each award in each category in each year
+    all_award_urls = []
+    
+    category_url = CATEGORY_BASE_URL + category_id + CATEGORY_SUFFIX + year
+
+    # the main page for the category ALSO is the page for the first award
+    all_award_urls.append(category_url)
+
+    soup = create_soup(category_url)
+    category_list_items = soup.findAll("ul","narrowOptions")[2].findAll("li")  # the list of links on the side is the third ul#narrowoptions
+    for c in category_list_items:
+        # if we have a link, add it to our list!
+        if c.a:
+            all_award_urls.append(c.a["href"])
+        
+    return all_award_urls
+
+
+if __name__ == '__main__':
 
