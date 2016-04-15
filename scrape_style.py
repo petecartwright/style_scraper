@@ -1,21 +1,16 @@
-from __future__ import print_function
 from bs4 import BeautifulSoup
 from urllib2 import urlopen
 from time import sleep
 from geocode_style import return_coords_and_formatted_address
-import csv, codecs, cStringIO
+# import csv, codecs, cStringIO
 import re
-import MySQLdb
+# import MySQLdb
 
-'''
-    Some terms:
-        Category = one of the 5 (or 6 in 2011) high level categories the awards are grouped into
-        Award = the individual awards (Best Hair Salon, Best Choice for Virginia’s Official State Song, etc)
-        Critic's Pick = They've got of bunch of totes rando awards like "Best Hope for an Art Theater" and "Best Way to Make It Yourself (Not Really)"
-                        These will be denoted as critic's pick and usually discarded from any analysis
-
-'''
-
+# Some terms:
+#     Category = one of the 5 (or 6 in 2011) high level categories the awards are grouped into
+#     Award = the individual awards (Best Hair Salon, Best Choice for Virginia's Official State Song, etc)
+#     Critic's Pick = They've got of bunch of totes rando awards like "Best Hope for An Art Theater" and "Best Way To Make it For Yourself (not really)"
+#                     These will be denoted as critic's pick and usually discarded from any analysis
 
 CATEGORY_BASE_URL = "http://www.styleweekly.com/richmond/BestOf?category="
 
@@ -75,7 +70,7 @@ def add_to_database(category_data):
     
 
     category = category_data['category']
-    print(category_data['category'])
+    print category_data['category']
     first_place = category_data['first_place']
     second_place = category_data['second_place']
     third_place = category_data['third_place']
@@ -88,7 +83,7 @@ def add_to_database(category_data):
     phone = category_data['phone']
     whose_pick = category_data['whose_pick']
     style_url = category_data['style_url']
-    print(category_data['style_url'])
+    print category_data['style_url']
     year = category_data['year']
     
     try:
@@ -118,7 +113,7 @@ def parse_address(address_list):
     """ Surprise, the address fields are inconsistently populated.  
         This tries to figure out what it is - URL, street address, or Phone #
     """
-    print("parsing address")
+    print "parsing address"
 
     address = ''
     url = ''
@@ -151,7 +146,7 @@ def parse_address(address_list):
 
     if address == '' and address_list[0].find(',') != -1:
         address = address_list[0][:address_list[0].index(',')] + ", Richmond, VA"
-        print(address)
+        print address 
 
     # if we have an address, lets get the geocode and google-formatted address
     if address != '':
@@ -171,6 +166,7 @@ def parse_address(address_list):
             }
     
     return list
+
 
 
 def get_data_for_page(url):
@@ -201,7 +197,7 @@ def get_data_for_page(url):
     description  = ''
     year_initial = soup.find(id='BestOfSearchTerms').find("ul").find("li").text.strip()
     year = year_initial[year_initial.find("[X]")+3:].strip()
-    
+    print year
     if whose_pick == "Readers' Pick":
 
         # gets the header element under the div with page1 ID, then parses the actual name
@@ -209,10 +205,9 @@ def get_data_for_page(url):
         # 2012 - the winners are under a different div
 
         if year == '2012':
-            print("year is 2012")
+            print "year is 2012"
             first_place  = get_name_from_place_string(soup.find("h2", "subheadline").text)
-
-        elif year == '2013':
+        else:
              
             if soup.find("div","page1").find("h3") is not None:
                 first_place  = get_name_from_place_string(soup.find("div","page1").find("h3").text)
@@ -220,10 +215,11 @@ def get_data_for_page(url):
                 first_place  = get_name_from_place_string(soup.find("div","page1").find("h4").text)
             else:
                 first_place = "...?"
+        print first_place
 
         # Grab the body text of the story
         storyBody = soup.find(id="storyBody").findAll("p")
-        
+        print storyBody
         # 2 cases here.  One - there are 4 <p> under storyBody.  ( addr, 2nd, 3rd, desc )
         #                Two - there are 3 <p> under storyBody (see Best Local Actor - no address!)  ( 2nd, 3rd, desc)
         if len(storyBody) >= 4:
@@ -282,11 +278,53 @@ def get_data_for_page(url):
 ################################################################################################
 ################################################################################################
 
+
+
+### Model sketch
+
+# class Award(SQLAlchemy.Model):
+#     id                  = db.Column(db.Integer, primary_key=True)
+#     category            = db.Column(db.String(500))
+#     first_place         = db.Column(db.String(500))
+#     second_place        = db.Column(db.String(500))
+#     third_place         = db.Column(db.String(500))
+#     description         = db.Column(db.String(10000))
+#     address             = db.Column(db.String(500))
+#     address_lat         = db.Column(db.Float)
+#     address_long        = db.Column(db.Float)
+#     address_formatted   = db.Column(db.String(500))
+#     url                 = db.Column(db.String(500))
+#     phone               = db.Column(db.String(500))
+#     whose_pick          = db.Column(db.String(500))
+#     style_url           = db.Column(db.String(500))
+#     year                = db.Column(db.String(500))
+
+#     def __init__(self, category, first_place, second_place, third_place, 
+#                  description, address, address_lat, address_long, 
+#                  address_formatted, url, phone, whose_pick, 
+#                  style_url, year):
+#         self.category           = category          
+#         self.first_place        = first_place       
+#         self.second_place       = second_place      
+#         self.third_place        = third_place       
+#         self.description        = description       
+#         self.address            = address           
+#         self.address_lat        = address_lat       
+#         self.address_long       = address_long      
+#         self.address_formatted  = address_formatted 
+#         self.url                = url               
+#         self.phone              = phone             
+#         self.whose_pick         = whose_pick        
+#         self.style_url          = style_url         
+#         self.year               = year              
+
+
+
 def get_award_urls(category_id, year):
     ''' take a category id and a year
         return a list of URLs for each award in that category
     '''
-
+    print 'getting URLs for {0} from {1}'.format(category_id, year)
     # get the list of URLS for each award in each category in each year
     all_award_urls = []
     
@@ -305,5 +343,15 @@ def get_award_urls(category_id, year):
     return all_award_urls
 
 
+def main():
+    all_award_urls = []
+    for year in CATEGORIES_BY_YEAR:
+        for category in CATEGORIES_BY_YEAR[year]:
+            category_id = CATEGORIES_BY_YEAR[year][category]
+            all_award_urls.extend(get_award_urls(category_id=category_id, year=year))
+    print all_award_urls 
+
 if __name__ == '__main__':
+    main()
+    
 
