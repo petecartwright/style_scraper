@@ -2,6 +2,12 @@ from bs4 import BeautifulSoup
 from urllib2 import urlopen
 from time import sleep
 from geocode_style import return_coords_and_formatted_address
+import create_db
+
+import os
+import sys
+
+
 # import csv, codecs, cStringIO
 import re
 # import MySQLdb
@@ -270,6 +276,9 @@ def get_data_for_page(url):
                  'whose_pick': whose_pick,
                  'style_url': style_url,
                  'year': year}
+
+    print page_data
+
     return page_data
 
 
@@ -279,44 +288,6 @@ def get_data_for_page(url):
 ################################################################################################
 
 
-
-### Model sketch
-
-# class Award(SQLAlchemy.Model):
-#     id                  = db.Column(db.Integer, primary_key=True)
-#     category            = db.Column(db.String(500))
-#     first_place         = db.Column(db.String(500))
-#     second_place        = db.Column(db.String(500))
-#     third_place         = db.Column(db.String(500))
-#     description         = db.Column(db.String(10000))
-#     address             = db.Column(db.String(500))
-#     address_lat         = db.Column(db.Float)
-#     address_long        = db.Column(db.Float)
-#     address_formatted   = db.Column(db.String(500))
-#     url                 = db.Column(db.String(500))
-#     phone               = db.Column(db.String(500))
-#     whose_pick          = db.Column(db.String(500))
-#     style_url           = db.Column(db.String(500))
-#     year                = db.Column(db.String(500))
-
-#     def __init__(self, category, first_place, second_place, third_place, 
-#                  description, address, address_lat, address_long, 
-#                  address_formatted, url, phone, whose_pick, 
-#                  style_url, year):
-#         self.category           = category          
-#         self.first_place        = first_place       
-#         self.second_place       = second_place      
-#         self.third_place        = third_place       
-#         self.description        = description       
-#         self.address            = address           
-#         self.address_lat        = address_lat       
-#         self.address_long       = address_long      
-#         self.address_formatted  = address_formatted 
-#         self.url                = url               
-#         self.phone              = phone             
-#         self.whose_pick         = whose_pick        
-#         self.style_url          = style_url         
-#         self.year               = year              
 
 
 
@@ -343,15 +314,62 @@ def get_award_urls(category_id, year):
     return all_award_urls
 
 
+def scrape_award(session=None, award):
+    ''' Takes a session and an Award object and fills in the data
+    '''
+
+    
+
+
 def main():
-    all_award_urls = []
+    s = create_db.get_session()
     for year in CATEGORIES_BY_YEAR:
         for category in CATEGORIES_BY_YEAR[year]:
             category_id = CATEGORIES_BY_YEAR[year][category]
-            all_award_urls.extend(get_award_urls(category_id=category_id, year=year))
-    print all_award_urls 
+            all_urls_in_category = get_award_urls(category_id=category_id, year=year)
+            for u in all_urls_in_category:
+                # check to see if we have it already
+                awards = s.query(create_db.Award).filter(create_db.Award.url==u).first()
+                if not awards:
+                    new_award = create_db.Award()
+                    new_award.url = u
+                    new_award.category = category
+                    new_award.year = year
+                    s.add(new_award)
+                    try:
+                        s.commit()
+                    except Exception:
+                        print 'error!'
+                        s.rollback()
+
+
+
 
 if __name__ == '__main__':
     main()
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
