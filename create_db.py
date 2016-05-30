@@ -18,8 +18,8 @@ class Award(Base):
     third_place         = Column(String(500))
     description         = Column(String(10000))
     address             = Column(String(500))
-    address_lat         = Column(Float)
-    address_long        = Column(Float)
+    address_lat         = Column(String(500))
+    address_long        = Column(String(500))
     address_formatted   = Column(String(500))
     url                 = Column(String(500))
     phone               = Column(String(500))
@@ -27,6 +27,8 @@ class Award(Base):
     style_url           = Column(String(500))
     year                = Column(String(500))
            
+    def __repr__(self):
+        return '<Award: {0} in {1} from {2}>'.format(self.award_name, self.category, self.year)
 
 
 def setup_db():
